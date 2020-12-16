@@ -24,7 +24,10 @@ def bin2asm(filename, output_dir, minLen=5):
     for func in r.cmdj('aflj'):
         name, offset = func['name'], func['offset']
         r.cmd(f's {offset}')
-        ops = r.cmdj('pdfj')['ops']
+        pdf = r.cmdj('pdfj')
+        if pdf is None:
+            continue
+        ops = pdf['ops']
         if len(ops) < minLen:
             continue
         if 'invalid' not in [op['type'] for op in ops]:
@@ -43,6 +46,9 @@ def bin2asm(filename, output_dir, minLen=5):
                 else:
                     # normalization
                     opcode = re.sub(r'0x[0-9a-f]+', 'CONST', op['opcode'])
+                    opcode = opcode.replace(' - ', ' + ')
+                    opcode = re.sub(r'\*[0-9]', '*CONST', opcode)
+                    opcode = re.sub(r' [0-9]', 'CONST', opcode)
                     output += f' {opcode}\n'
             uid = sha3(output)
             if not os.path.exists(f'{output_dir}/{uid}'):
@@ -73,4 +79,5 @@ def cli(path, output_dir, minLen):
     else:
         print(f'[Error] No such file or directory: {path}')
 
-cli()
+if __name__ == '__main__':
+    cli()
